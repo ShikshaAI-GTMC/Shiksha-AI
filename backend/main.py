@@ -66,7 +66,7 @@ async def pdfs(user=Depends(current_user)):
 @app.get('/pdf/{pdf_id}')
 async def pdf(pdf_id:str,user=Depends(current_user)):
     p=await owned_pdf(pdf_id,user);summary=await db.summaries.find_one({'pdf_id':p['_id']});audio=await db.audio_lessons.find_one({'pdf_id':p['_id']})
-    return {'id':str(p['_id']),'title':p['title'],'summary':summary['summary'],'audio_url':audio['audio_url'] if audio else None}
+    return {'id':str(p['_id']),'title':p['title'],'summary':summary['summary'],'audio_lesson':{'script':audio.get('script',''),'voice':audio.get('voice','female')} if audio else None}
 @app.post('/generate-summary')
 async def generate_summary(data:GenerateRequest,user=Depends(current_user)):
     p=await owned_pdf(data.pdf_id,user);summary=make_summary(p['text']);await db.summaries.update_one({'pdf_id':p['_id']},{'$set':{'summary':summary,'updated_at':now()}},upsert=True);return summary
@@ -93,6 +93,13 @@ async def generate_audio(data:AudioRequest,user=Depends(current_user)):
     p=await owned_pdf(data.pdf_id,user);summary=await db.summaries.find_one({'pdf_id':p['_id']});script=summary['summary']['detailed_summary']
     # Production extension point: call a TTS provider here. A text transcript is retained even when TTS is not configured.
     await db.audio_lessons.update_one({'pdf_id':p['_id']},{'$set':{'audio_url':None,'script':script,'voice':data.voice,'duration':0,'created_at':now()}},upsert=True);await activity(user,f'Prepared audio script for “{p["title"]}”','♫');return {'message':'Audio script prepared. Configure a TTS provider to create MP3 output.'}
+@app.get('/audio-lessons')
+async def audio_lessons(user=Depends(current_user)):
+    lessons=[]
+    pipeline=[{'$lookup':{'from':'pdfs','localField':'pdf_id','foreignField':'_id','as':'pdf'}},{'$unwind':'$pdf'},{'$match':{'pdf.user_id':user['_id']}},{'$sort':{'created_at':-1}}]
+    async for item in db.audio_lessons.aggregate(pipeline):
+        lessons.append({'pdf_id':str(item['pdf_id']),'title':item['pdf']['title'],'script':item.get('script',''),'voice':item.get('voice','female'),'created_at':item.get('created_at')})
+    return lessons
 @app.get('/dashboard')
 async def dashboard(user=Depends(current_user)):
     pdf_count=await db.pdfs.count_documents({'user_id':user['_id']});audio_count=await db.audio_lessons.count_documents({'pdf_id':{'$in':[x['_id'] async for x in db.pdfs.find({'user_id':user['_id']},{'_id':1})]}});attempts=[x async for x in db.quiz_attempts.find({'user_id':user['_id']})];history=[x async for x in db.history.find({'user_id':user['_id']}).sort('date',-1).limit(6)]
