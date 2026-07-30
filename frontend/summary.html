@@ -1,6 +1,161 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lessons | ShikshaAI</title><link rel="stylesheet" href="css/style.css"></head><body><script src="js/api.js"></script><script src="js/app.js"></script><script>
-requireAuth();let id=new URLSearchParams(location.search).get('id');shell('summary.html',id?'Lesson summary':'My lessons','<div id="main" class="lesson-list"></div>');
-function audioCard(a){window.lessonScript=a.script;return `<article class="audio-player"><div class="audio-head"><div><b>Audio lesson</b><p class="muted" data-speech-status>Ready to play</p></div><span class="audio-icon">♫</span></div><div class="tools"><button class="btn" onclick="playLesson(window.lessonScript,'${a.voice}')">Play</button><button class="btn btn-outline" onclick="pauseLesson()">Pause</button><button class="btn btn-outline" onclick="resumeLesson()">Resume</button><button class="btn btn-outline" onclick="stopLesson()">Stop</button></div></article>`}
-async function load(){try{if(!id){let x=await api.get('/pdfs');main.innerHTML=x.length?x.map(p=>`<article class="card"><div><b>${p.title}</b><p>Uploaded ${formatDate(p.upload_date)}</p></div><a class="btn" href="summary.html?id=${p.id}">Open lesson</a></article>`).join(''):'<div class="empty">No lessons yet. <a href="upload.html" style="color:var(--primary)">Upload your first PDF.</a></div>';return}let p=await api.get('/pdf/'+id);document.querySelector('h1').textContent=p.title;main.innerHTML=`<div class="tools"><button class="btn" onclick="copySummary()">Copy summary</button><button class="btn btn-outline" onclick="downloadSummary()">Download notes</button><a class="btn btn-outline" href="flashcards.html?id=${id}">Flashcards</a><a class="btn btn-outline" href="quiz.html?id=${id}">Quiz</a></div><article class="card"><h3>Short summary</h3><p class="summary-box">${p.summary.short_summary}</p></article><article class="card" style="margin-top:15px"><h3>Detailed summary</h3><p class="summary-box">${p.summary.detailed_summary}</p></article><article class="card" style="margin-top:15px"><h3>Important points</h3><p class="summary-box">${p.summary.bullet_notes.map(x=>'• '+x).join('\n')}</p><p><b>Keywords:</b> ${p.summary.keywords.join(', ')}</p></article><div style="margin-top:15px">${p.audio_lesson?audioCard(p.audio_lesson):'<button class="btn btn-accent" onclick="audio()">Generate audio lesson</button>'}</div>`;window.current=p}catch(e){toast(e.message,'error')}}
-async function audio(){try{await api.post('/generate-audio',{pdf_id:id,voice:'female'});toast('Audio lesson is ready');load()}catch(e){toast(e.message,'error')}}function copySummary(){navigator.clipboard.writeText(current.summary.detailed_summary);toast('Summary copied')}function downloadSummary(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([current.summary.detailed_summary],{type:'text/plain'}));a.download='shiksha-summary.txt';a.click()}load()
-</script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Lessons | ShikshaAI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    const id = new URLSearchParams(location.search).get('id');
+
+    shell('summary.html', id ? 'Lesson Summary' : 'My Lessons', `
+      <div id="main"></div>
+    `);
+
+    function audioCard(a) {
+      window.lessonScript = a.script;
+      return `
+        <article class="card" style="background:#F0FDF4; border-color:#86EFAC;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div>
+              <b style="font-size:16px; color:var(--primary);">🎧 Audio Lesson Prepared</b>
+              <div class="muted" style="font-size:13px;" data-speech-status>Ready to play</div>
+            </div>
+            <span style="font-size:24px;">♫</span>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" onclick="playLesson(window.lessonScript, '${a.voice}')">▶ Play</button>
+            <button class="btn btn-outline" onclick="pauseLesson()">Pause</button>
+            <button class="btn btn-outline" onclick="resumeLesson()">Resume</button>
+            <button class="btn btn-outline" onclick="stopLesson()">Stop</button>
+          </div>
+        </article>
+      `;
+    }
+
+    async function load() {
+      const main = document.querySelector('#main');
+      try {
+        if (!id) {
+          const pdfs = await api.get('/pdfs');
+          if (!pdfs.length) {
+            main.innerHTML = `
+              <div class="card" style="text-align:center; padding:50px;">
+                <div style="font-size:48px; margin-bottom:12px;">📚</div>
+                <h3>No lessons created yet</h3>
+                <p class="muted">Upload your first textbook or PDF to turn it into summaries, flashcards, and audio.</p>
+                <a class="btn" href="upload.html" style="margin-top:10px;">Upload PDF Now →</a>
+              </div>
+            `;
+            return;
+          }
+
+          const icons = ['📘', '📕', '📗', '📙', '📓'];
+          main.innerHTML = `
+            <div class="lesson-grid">
+              ${pdfs.map((p, i) => `
+                <article class="subject-card">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                      <span style="font-size:32px;">${icons[i % icons.length]}</span>
+                      <span class="badge">Medium</span>
+                    </div>
+                    <h3 style="font-size:17px; margin:14px 0 6px;">${p.title}</h3>
+                    <div class="muted" style="font-size:12px; margin-bottom:14px;">
+                      ⏱ 45 minutes · Uploaded ${formatDate(p.upload_date)}
+                    </div>
+                    <div class="progress" style="height:6px; margin-bottom:16px;">
+                      <i style="width:65%;"></i>
+                    </div>
+                  </div>
+                  <a class="btn" href="summary.html?id=${p.id}" style="width:100%;">Continue →</a>
+                </article>
+              `).join('')}
+            </div>
+          `;
+          return;
+        }
+
+        const p = await api.get('/pdf/' + id);
+        document.querySelector('h1').textContent = p.title;
+        window.current = p;
+
+        main.innerHTML = `
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
+            <button class="btn" onclick="copySummary()">📋 Copy Summary</button>
+            <button class="btn btn-outline" onclick="downloadSummary()">💾 Download Notes</button>
+            <a class="btn btn-outline" href="flashcards.html?id=${id}">▣ Flashcards</a>
+            <a class="btn btn-outline" href="quiz.html?id=${id}">? Take Quiz</a>
+          </div>
+
+          <article class="card" style="margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="margin:0; font-size:18px;">✨ Short Summary</h3>
+              <span class="badge badge-gold">Key Overview</span>
+            </div>
+            <p style="line-height:1.8; color:var(--text); margin:0;">${p.summary.short_summary}</p>
+          </article>
+
+          <article class="card" style="margin-bottom:18px;">
+            <h3 style="margin:0 0 12px; font-size:18px;">📖 Detailed Notes</h3>
+            <p style="line-height:1.85; color:var(--text); white-space:pre-wrap; margin:0;">${p.summary.detailed_summary}</p>
+          </article>
+
+          <article class="card" style="margin-bottom:18px;">
+            <h3 style="margin:0 0 12px; font-size:18px;">📌 Important Concepts</h3>
+            <ul style="padding-left:20px; line-height:1.8; color:var(--text); margin:0 0 16px;">
+              ${p.summary.bullet_notes.map(x => `<li>${x}</li>`).join('')}
+            </ul>
+            <div style="font-size:13px;">
+              <b>Keywords:</b> <span class="muted">${p.summary.keywords.join(', ')}</span>
+            </div>
+          </article>
+
+          <div>
+            ${p.audio_lesson ? audioCard(p.audio_lesson) : `
+              <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h4 style="margin:0 0 4px;">🎧 Generate Audio Lesson</h4>
+                  <p class="muted" style="margin:0; font-size:13px;">Listen to your textbook notes anywhere on the go.</p>
+                </div>
+                <button class="btn btn-accent" onclick="generateAudio()">Generate Audio →</button>
+              </div>
+            `}
+          </div>
+        `;
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    async function generateAudio() {
+      try {
+        await api.post('/generate-audio', { pdf_id: id, voice: 'female' });
+        toast('Audio lesson is ready!');
+        load();
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    function copySummary() {
+      navigator.clipboard.writeText(current.summary.detailed_summary);
+      toast('Summary copied to clipboard!');
+    }
+
+    function downloadSummary() {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([current.summary.detailed_summary], { type: 'text/plain' }));
+      a.download = `${current.title}-notes.txt`;
+      a.click();
+    }
+
+    load();
+  </script>
+</body>
+</html>

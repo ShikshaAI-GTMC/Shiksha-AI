@@ -1,1 +1,138 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Quiz | ShikshaAI</title><link rel="stylesheet" href="css/style.css"></head><body><script src="js/api.js"></script><script src="js/app.js"></script><script>requireAuth();let id=new URLSearchParams(location.search).get('id'),quiz;shell('quiz.html','Knowledge quiz','<div id="main"></div>');async function load(){if(!id){let x=await api.get('/pdfs');main.innerHTML=x.length?'<div class="lesson-list">'+x.map(p=>`<article class="card"><b>${p.title}</b><a class="btn" href="quiz.html?id=${p.id}">Take quiz</a></article>`).join('')+'</div>':'<div class="empty">Upload a PDF to take a quiz.</div>';return}try{quiz=await api.get('/pdf/'+id+'/quiz');if(!quiz.questions?.length){await api.post('/generate-quiz',{pdf_id:id});quiz=await api.get('/pdf/'+id+'/quiz')}main.innerHTML=`<form id="qform">${quiz.questions.map((q,i)=>`<section class="card quiz-question"><b>${i+1}. ${q.question}</b>${q.options.map((o,j)=>`<label class="option"><input required type="radio" name="q${i}" value="${j}">${o}</label>`).join('')}</section>`).join('')}<button class="btn">Submit quiz</button></form>`;qform.onsubmit=submit}catch(e){toast(e.message,'error')}}async function submit(e){e.preventDefault();let answers=quiz.questions.map((q,i)=>+new FormData(qform).get('q'+i));try{let r=await api.post('/pdf/'+id+'/submit-quiz',{answers});main.innerHTML=`<article class="card" style="text-align:center"><div class="eyebrow">Quiz complete</div><h2>${r.percentage}%</h2><p><b>${r.correct}</b> correct · <b>${r.wrong}</b> wrong</p><p class="muted">${r.message}</p><a class="btn" href="quiz.html?id=${id}">Try again</a></article>`}catch(x){toast(x.message,'error')}}load()</script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quiz | ShikshaAI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    const id = new URLSearchParams(location.search).get('id');
+    let quiz;
+
+    shell('quiz.html', 'Knowledge Quiz', `
+      <div id="main"></div>
+    `);
+
+    async function load() {
+      const main = document.querySelector('#main');
+
+      if (!id) {
+        try {
+          const pdfs = await api.get('/pdfs');
+          if (!pdfs.length) {
+            main.innerHTML = `
+              <div class="card" style="text-align:center; padding:50px;">
+                <div style="font-size:48px; margin-bottom:12px;">🧠</div>
+                <h3>No quizzes available</h3>
+                <p class="muted">Upload a PDF study document to generate practice quizzes!</p>
+                <a class="btn" href="upload.html" style="margin-top:10px;">Upload PDF →</a>
+              </div>
+            `;
+            return;
+          }
+
+          const icons = ['🧠', '💻', '📐', '🔬', '🌐'];
+          main.innerHTML = `
+            <div class="lesson-grid">
+              ${pdfs.map((p, i) => `
+                <article class="subject-card">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                      <span style="font-size:32px;">${icons[i % icons.length]}</span>
+                      <span class="badge badge-gold">⭐⭐ Medium</span>
+                    </div>
+                    <h3 style="font-size:18px; margin:14px 0 6px;">${p.title}</h3>
+                    <div class="muted" style="font-size:13px; margin-bottom:16px;">
+                      ⏱ 10 Questions · Multiple Choice
+                    </div>
+                  </div>
+                  <a class="btn" href="quiz.html?id=${p.id}" style="width:100%;">Start Quiz →</a>
+                </article>
+              `).join('')}
+            </div>
+          `;
+          return;
+        } catch (e) {
+          return toast(e.message, 'error');
+        }
+      }
+
+      try {
+        quiz = await api.get(`/pdf/${id}/quiz`);
+        if (!quiz.questions?.length) {
+          await api.post('/generate-quiz', { pdf_id: id });
+          quiz = await api.get(`/pdf/${id}/quiz`);
+        }
+
+        main.innerHTML = `
+          <div class="dash-hero" style="margin-bottom:24px;">
+            <div>
+              <div class="badge badge-gold" style="margin-bottom:8px;">Practice Quiz</div>
+              <h2 style="margin:0;">🧠 ${quiz.questions.length} Practice Questions</h2>
+              <p style="opacity:0.9; margin-top:4px;">Test your knowledge and build exam confidence.</p>
+            </div>
+          </div>
+
+          <form id="qform">
+            ${quiz.questions.map((q, i) => `
+              <section class="card" style="margin-bottom:20px;">
+                <b style="font-size:16px; display:block; margin-bottom:14px;">${i + 1}. ${q.question}</b>
+                <div>
+                  ${q.options.map((o, j) => `
+                    <label style="display:flex; align-items:center; gap:10px; padding:12px 16px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer; background:#F8FAFC;">
+                      <input required type="radio" name="q${i}" value="${j}">
+                      <span style="font-size:14px;">${o}</span>
+                    </label>
+                  `).join('')}
+                </div>
+              </section>
+            `).join('')}
+            
+            <div style="margin-top:24px;">
+              <button class="btn" style="padding:14px 32px; font-size:16px;">Submit Quiz Answers →</button>
+            </div>
+          </form>
+        `;
+
+        document.querySelector('#qform').onsubmit = submit;
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    async function submit(e) {
+      e.preventDefault();
+      const qform = document.querySelector('#qform');
+      const answers = quiz.questions.map((q, i) => +new FormData(qform).get(`q${i}`));
+
+      try {
+        const r = await api.post(`/pdf/${id}/submit-quiz`, { answers });
+        document.querySelector('#main').innerHTML = `
+          <article class="card" style="text-align:center; padding:50px; max-width:600px; margin:30px auto;">
+            <div style="font-size:56px; margin-bottom:10px;">🏆</div>
+            <div class="eyebrow">Quiz Performance</div>
+            <h1 style="font-size:52px; color:var(--primary); margin:10px 0;">${r.percentage}%</h1>
+            <p style="font-size:16px; margin-bottom:16px;">
+              <b>${r.correct}</b> Correct &nbsp;·&nbsp; <span style="color:#EF4444;"><b>${r.wrong}</b> Wrong</span>
+            </p>
+            <p class="muted" style="line-height:1.7; margin-bottom:24px;">${r.message}</p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+              <a class="btn" href="quiz.html?id=${id}">Try Again</a>
+              <a class="btn btn-outline" href="dashboard.html">Back to Dashboard</a>
+            </div>
+          </article>
+        `;
+      } catch (x) {
+        toast(x.message, 'error');
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

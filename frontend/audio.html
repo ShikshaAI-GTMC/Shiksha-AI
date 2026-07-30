@@ -1,5 +1,112 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audio Lessons | ShikshaAI</title><link rel="stylesheet" href="css/style.css"></head><body><script src="js/api.js"></script><script src="js/app.js"></script><script>
-requireAuth();shell('audio.html','Audio lessons','<div id="main" class="lesson-list"></div>');
-function card(x,i){return `<article class="card"><div><b>${x.title}</b><p>Created ${formatDate(x.created_at)} · Ready to listen</p><p>${x.script.slice(0,150)}…</p></div><div class="tools"><button class="btn" onclick="playLesson(window.audioLessons[${i}].script,'${x.voice}')">Play</button><button class="btn btn-outline" onclick="pauseLesson()">Pause</button><a class="btn btn-outline" href="summary.html?id=${x.pdf_id}">Open</a></div></article>`}
-async function load(){try{let x=await api.get('/audio-lessons');window.audioLessons=x;main.innerHTML=x.length?x.map(card).join(''):'<div class="empty">No audio lessons yet. Open a lesson and choose “Generate audio lesson.”</div>'}catch(e){toast(e.message,'error')}}load()
-</script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Audio Lessons | ShikshaAI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+
+    shell('audio.html', 'Audio Player & Lessons', `
+      <div id="playerContainer"></div>
+      <div id="main" class="lesson-grid"></div>
+    `);
+
+    function renderSpotifyPlayer(item, index) {
+      window.currentAudioScript = item.script;
+      document.querySelector('#playerContainer').innerHTML = `
+        <div class="music-player">
+          <div class="music-info">
+            <div class="music-cover">🎧</div>
+            <div style="flex:1;">
+              <span class="badge badge-gold" style="margin-bottom:6px;">Now Playing</span>
+              <h3 style="margin:4px 0 2px; font-size:20px;">${item.title}</h3>
+              <p class="muted" style="margin:0; font-size:13px; color:#94A3B8;" data-speech-status>Ready to play</p>
+            </div>
+            <div>
+              <select onchange="window.currentAudioVoice=this.value" style="background:#0F172A; color:white; border:1px solid #334155; padding:8px 12px; border-radius:8px; font-size:13px;">
+                <option value="female" ${item.voice === 'female' ? 'selected' : ''}>Female Voice</option>
+                <option value="male" ${item.voice === 'male' ? 'selected' : ''}>Male Voice</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin:20px 0 10px;">
+            <div class="progress" style="height:6px; background:#334155;">
+              <i style="width:40%; background:var(--primary-gradient);"></i>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:#94A3B8; margin-top:6px;">
+              <span>1:42</span>
+              <span>7:31</span>
+            </div>
+          </div>
+
+          <div class="music-controls">
+            <button class="ctrl-btn" onclick="stopLesson()" title="Stop">⏮</button>
+            <button class="ctrl-btn play-btn" onclick="playLesson(window.currentAudioScript, window.currentAudioVoice || '${item.voice}')" title="Play">▶</button>
+            <button class="ctrl-btn" onclick="pauseLesson()" title="Pause">⏸</button>
+            <button class="ctrl-btn" onclick="resumeLesson()" title="Resume">⏭</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function card(x, i) {
+      return `
+        <article class="subject-card">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:28px;">🎧</span>
+              <span class="badge">Audio Prepared</span>
+            </div>
+            <h3 style="font-size:17px; margin:12px 0 6px;">${x.title}</h3>
+            <p class="muted" style="font-size:13px; margin:0 0 14px;">
+              Created ${formatDate(x.created_at)}
+            </p>
+            <p style="font-size:13px; line-height:1.6; color:var(--text); margin-bottom:16px;">
+              ${x.script.slice(0, 120)}…
+            </p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" style="flex:1;" onclick="renderSpotifyPlayer(window.audioLessons[${i}], ${i}); playLesson(window.audioLessons[${i}].script, '${x.voice}')">
+              ▶ Listen
+            </button>
+            <a class="btn btn-outline" href="summary.html?id=${x.pdf_id}">Notes</a>
+          </div>
+        </article>
+      `;
+    }
+
+    async function load() {
+      try {
+        const x = await api.get('/audio-lessons');
+        window.audioLessons = x;
+        const main = document.querySelector('#main');
+
+        if (x.length) {
+          renderSpotifyPlayer(x[0], 0);
+          main.innerHTML = x.map(card).join('');
+        } else {
+          main.innerHTML = `
+            <div class="card" style="text-align:center; padding:50px; grid-column: 1 / -1;">
+              <div style="font-size:48px; margin-bottom:12px;">🎧</div>
+              <h3>No audio lessons generated yet</h3>
+              <p class="muted">Open any lesson from "My Lessons" and click "Generate Audio Lesson" to create your first audio summary!</p>
+              <a class="btn" href="summary.html" style="margin-top:10px;">Go to My Lessons →</a>
+            </div>
+          `;
+        }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

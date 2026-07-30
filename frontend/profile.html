@@ -1,1 +1,101 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile | ShikshaAI</title><link rel="stylesheet" href="css/style.css"></head><body><script src="js/api.js"></script><script src="js/app.js"></script><script>requireAuth();shell('profile.html','My profile','<div class="two-col"><article class="card"><h3 id="n"></h3><p id="e" class="muted"></p><button class="btn" style="margin-top:20px" onclick="logout()">Logout</button></article><article class="card"><h3>Learning statistics</h3><div id="s"></div></article></div>');(async()=>{try{let d=await api.get('/dashboard'),u=JSON.parse(localStorage.shiksha_user);n.textContent=u.name;e.textContent=u.email;s.innerHTML=`<p>Uploaded PDFs <b style="float:right">${d.stats.pdfs}</b></p><p>Quiz scores <b style="float:right">${d.stats.quiz_scores}</b></p><p>Study hours <b style="float:right">${d.stats.study_hours}</b></p>`}catch(x){toast(x.message,'error')}})()</script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Profile | ShikshaAI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+
+    shell('profile.html', 'Student Profile & Gamification', `
+      <div class="two-col">
+        <div>
+          <article class="card" style="text-align:center; padding:35px 25px; margin-bottom:24px;">
+            <div class="avatar" id="pAvatar" style="width:80px; height:80px; font-size:36px; margin:0 auto 16px;">🙂</div>
+            <h2 id="pName" style="margin:0 0 4px; font-size:24px;">Student Name</h2>
+            <p id="pEmail" class="muted" style="margin:0 0 20px; font-size:14px;"></p>
+            
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
+              <span class="badge badge-gold" style="font-size:14px; padding:6px 14px;">Level 8 Scholar</span>
+              <span class="badge" style="font-size:14px; padding:6px 14px;">🔥 17 Day Streak</span>
+              <span class="badge badge-blue" style="font-size:14px; padding:6px 14px;">🏆 1200 XP</span>
+            </div>
+
+            <button class="btn btn-outline" onclick="logout()" style="width:100%;">Sign Out</button>
+          </article>
+
+          <article class="card">
+            <h3 style="margin:0 0 16px; font-size:18px;">📊 Learning Stats</h3>
+            <div id="pStats" style="display:flex; flex-direction:column; gap:12px;"></div>
+          </article>
+        </div>
+
+        <div>
+          <article class="card">
+            <h3 style="margin:0 0 20px; font-size:18px;">🏆 Achievements & Badges</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+              <div style="padding:16px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; text-align:center;">
+                <div style="font-size:32px; margin-bottom:6px;">🎓</div>
+                <b style="font-size:14px; display:block;">Early Bird</b>
+                <span class="muted" style="font-size:12px;">Completed 5 morning lessons</span>
+              </div>
+              <div style="padding:16px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; text-align:center;">
+                <div style="font-size:32px; margin-bottom:6px;">📚</div>
+                <b style="font-size:14px; display:block;">PDF Master</b>
+                <span class="muted" style="font-size:12px;">Uploaded 10+ documents</span>
+              </div>
+              <div style="padding:16px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; text-align:center;">
+                <div style="font-size:32px; margin-bottom:6px;">🧠</div>
+                <b style="font-size:14px; display:block;">Quiz Champ</b>
+                <span class="muted" style="font-size:12px;">Scored 90%+ in 3 quizzes</span>
+              </div>
+              <div style="padding:16px; background:#F8FAFC; border:1px solid var(--line); border-radius:12px; text-align:center;">
+                <div style="font-size:32px; margin-bottom:6px;">⚡</div>
+                <b style="font-size:14px; display:block;">Fast Learner</b>
+                <span class="muted" style="font-size:12px;">Finished 5 audio lessons</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    `);
+
+    (async () => {
+      try {
+        const u = JSON.parse(localStorage.getItem('shiksha_user') || '{}');
+        const name = u.name || 'Student';
+        document.querySelector('#pName').textContent = name;
+        document.querySelector('#pEmail').textContent = u.email || 'student@shiksha.ai';
+        document.querySelector('#pAvatar').textContent = name.charAt(0).toUpperCase() || '🙂';
+
+        const d = await api.get('/dashboard');
+        document.querySelector('#pStats').innerHTML = `
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span>Uploaded PDFs</span>
+            <b>${d.stats.pdfs}</b>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span>Audio Lessons</span>
+            <b>${d.stats.audio_lessons}</b>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span>Average Quiz Score</span>
+            <b style="color:var(--primary);">${d.stats.quiz_scores}%</b>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span>Study Hours Logged</span>
+            <b>${d.stats.study_hours} hrs</b>
+          </div>
+        `;
+      } catch (x) {
+        toast(x.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,1 +1,120 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flashcards | ShikshaAI</title><link rel="stylesheet" href="css/style.css"></head><body><script src="js/api.js"></script><script src="js/app.js"></script><script>requireAuth();let id=new URLSearchParams(location.search).get('id'),cards=[],n=0;shell('flashcards.html','Flashcards','<div id="main"></div>');async function load(){if(!id){let x=await api.get('/pdfs');main.innerHTML=x.length?'<div class="lesson-list">'+x.map(p=>`<article class="card"><b>${p.title}</b><a class="btn" href="flashcards.html?id=${p.id}">Study cards</a></article>`).join('')+'</div>':'<div class="empty">Upload a PDF to generate flashcards.</div>';return}try{cards=await api.get('/pdf/'+id+'/flashcards');if(!cards.length){await api.post('/generate-flashcards',{pdf_id:id});cards=await api.get('/pdf/'+id+'/flashcards')}render()}catch(e){toast(e.message,'error')}}function render(){let c=cards[n];main.innerHTML=`<p class="muted" style="text-align:center">Card ${n+1} of ${cards.length} · Click to flip</p><div class="flashcard" id="fc" onclick="this.classList.toggle('flip')"><div class="flashcard-inner"><div class="flash-face">${c.question}</div><div class="flash-face flash-back">${c.answer}</div></div></div><div style="text-align:center"><button class="btn btn-outline" onclick="move(-1)">← Previous</button> <button class="btn" onclick="move(1)">Next →</button></div>`}function move(x){n=(n+x+cards.length)%cards.length;render()}load()</script></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Flashcards | ShikshaAI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    requireAuth();
+    const id = new URLSearchParams(location.search).get('id');
+    let cards = [];
+    let n = 0;
+
+    shell('flashcards.html', 'Smart Flashcards', `
+      <div id="main"></div>
+    `);
+
+    async function load() {
+      const main = document.querySelector('#main');
+
+      if (!id) {
+        try {
+          const pdfs = await api.get('/pdfs');
+          if (!pdfs.length) {
+            main.innerHTML = `
+              <div class="card" style="text-align:center; padding:50px;">
+                <div style="font-size:48px; margin-bottom:12px;">▣</div>
+                <h3>No flashcard decks found</h3>
+                <p class="muted">Upload a PDF to generate revision flashcards automatically!</p>
+                <a class="btn" href="upload.html" style="margin-top:10px;">Upload PDF →</a>
+              </div>
+            `;
+            return;
+          }
+
+          const icons = ['▣', '⚡', '💡', '📌', '✨'];
+          main.innerHTML = `
+            <div class="lesson-grid">
+              ${pdfs.map((p, i) => `
+                <article class="subject-card">
+                  <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                      <span style="font-size:32px;">${icons[i % icons.length]}</span>
+                      <span class="badge badge-gold">Active Study</span>
+                    </div>
+                    <h3 style="font-size:18px; margin:14px 0 6px;">${p.title}</h3>
+                    <div class="muted" style="font-size:13px; margin-bottom:16px;">
+                      ⏱ 10 Cards Deck · Tap to Flip
+                    </div>
+                  </div>
+                  <a class="btn" href="flashcards.html?id=${p.id}" style="width:100%;">Study Cards →</a>
+                </article>
+              `).join('')}
+            </div>
+          `;
+          return;
+        } catch (e) {
+          return toast(e.message, 'error');
+        }
+      }
+
+      try {
+        cards = await api.get(`/pdf/${id}/flashcards`);
+        if (!cards.length) {
+          await api.post('/generate-flashcards', { pdf_id: id });
+          cards = await api.get(`/pdf/${id}/flashcards`);
+        }
+        render();
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    function render() {
+      const main = document.querySelector('#main');
+      const c = cards[n];
+
+      main.innerHTML = `
+        <div style="max-width:620px; margin:0 auto;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span class="badge badge-blue">Card ${n + 1} of ${cards.length}</span>
+            <span class="muted" style="font-size:13px;">💡 Tap card to flip answer</span>
+          </div>
+
+          <div class="flashcard" onclick="this.classList.toggle('flip')">
+            <div class="flashcard-inner">
+              <div class="flash-face">
+                <span class="badge" style="position:absolute; top:20px; left:20px;">Question</span>
+                <div>${c.question}</div>
+                <span style="position:absolute; bottom:20px; font-size:12px; color:var(--muted);">🔄 Tap to Flip</span>
+              </div>
+              <div class="flash-face flash-back">
+                <span class="badge" style="position:absolute; top:20px; left:20px; background:var(--primary); color:white;">Answer</span>
+                <div>${c.answer}</div>
+                <span style="position:absolute; bottom:20px; font-size:12px; color:var(--primary);">🔄 Tap to Flip back</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; gap:16px;">
+            <button class="btn btn-outline" style="flex:1;" onclick="move(-1)">← Previous Card</button>
+            <button class="btn" style="flex:1;" onclick="move(1)">Next Card →</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function move(dir) {
+      n = (n + dir + cards.length) % cards.length;
+      render();
+    }
+
+    load();
+  </script>
+</body>
+</html>
