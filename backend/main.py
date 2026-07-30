@@ -1,4 +1,6 @@
 import os,shutil,uuid
+from dotenv import load_dotenv
+load_dotenv()
 from datetime import datetime,timezone
 from pathlib import Path
 import fitz

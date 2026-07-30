@@ -1,0 +1,22 @@
+# Environment variables (contains secrets)
+.env
+*.env
+
+# Python / Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Uploaded / Generated files
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/generated_audio/*
+!backend/generated_audio/.gitkeep
+
+# IDE / System
+.DS_Store
+.vscode/
+.idea/
