@@ -19,7 +19,12 @@ app=FastAPI(title='ShikshaAI API',version='1.0.0')
 app.add_middleware(CORSMiddleware,allow_origins=os.getenv('CORS_ORIGINS','*').split(','),allow_credentials=False,allow_methods=['*'],allow_headers=['*'])
 app.mount('/uploads',StaticFiles(directory=UPLOADS),name='uploads');app.mount('/audio',StaticFiles(directory=AUDIO),name='audio')
 @app.on_event('startup')
-async def startup(): await setup_indexes()
+async def startup():
+    try:
+        await setup_indexes()
+    except Exception as e:
+        print(f"Startup database warning: {e}")
+
 def now():return datetime.now(timezone.utc)
 def oid(value):
     try:return ObjectId(value)
