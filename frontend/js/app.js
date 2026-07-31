@@ -159,3 +159,35 @@ function stopLesson() {
   window.speechSynthesis.cancel();
   setSpeechStatus('Ready to play');
 }
+
+// Auth Helper Utilities
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (btn) btn.innerHTML = '👁️‍🗨️';
+  } else {
+    input.type = 'password';
+    if (btn) btn.innerHTML = '👁️';
+  }
+}
+
+function checkPasswordStrength(password) {
+  let score = 0;
+  if (!password) return { score: 0, label: '', color: '#CBD5E1', width: '0%' };
+  if (password.length >= 8) score += 25;
+  if (password.length >= 12) score += 15;
+  if (/[A-Z]/.test(password)) score += 20;
+  if (/[0-9]/.test(password)) score += 20;
+  if (/[^A-Za-z0-9]/.test(password)) score += 20;
+
+  if (score < 40) {
+    return { score, label: 'Weak', color: '#EF4444', width: '33%' };
+  } else if (score < 75) {
+    return { score, label: 'Medium', color: '#F59E0B', width: '66%' };
+  } else {
+    return { score, label: 'Strong', color: '#10B981', width: '100%' };
+  }
+}
+

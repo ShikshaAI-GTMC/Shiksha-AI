@@ -1,1 +1,128 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login | ShikshaAI</title><link rel="stylesheet" href="css/style.css"></head><body><main class="auth-wrap"><form class="auth-card" id="loginForm"><a class="brand" href="index.html">Shiksha<span>AI</span></a><h1>Welcome back</h1><p>Continue your learning journey.</p><div class="field"><label for="email">Email</label><input type="email" id="email" name="email" required placeholder="you@example.com"></div><div class="field"><label for="password">Password</label><input type="password" id="password" name="password" required minlength="8" placeholder="Your password"></div><button type="submit" class="btn">Login →</button><p class="auth-switch">New here? <a href="signup.html">Create your account</a></p></form></main><script src="js/api.js"></script><script src="js/app.js"></script><script>const loginForm=document.querySelector('#loginForm');loginForm.onsubmit=async event=>{event.preventDefault();const form=new FormData(loginForm);try{const data=await api.post('/login',{email:form.get('email'),password:form.get('password')});localStorage.setItem('shiksha_token',data.access_token);localStorage.setItem('shiksha_user',JSON.stringify(data.user));location.href='dashboard.html'}catch(error){toast(error.message,'error')}};</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log In | ShikshaAI</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-page-wrapper">
+    <!-- Floating Background Glows & Floating Icons -->
+    <div class="auth-bg-glow auth-bg-glow-1"></div>
+    <div class="auth-bg-glow auth-bg-glow-2"></div>
+    <div class="auth-floating-icon icon-1">📚</div>
+    <div class="auth-floating-icon icon-2">🟢</div>
+    <div class="auth-floating-icon icon-3">🟡</div>
+    <div class="auth-floating-icon icon-4">🎧</div>
+    <div class="auth-floating-icon icon-5">✨</div>
+
+    <div class="auth-split-grid">
+      <!-- Left Hero Card & Illustration Section -->
+      <div class="auth-hero-card">
+        <div class="auth-hero-img-box">
+          <img src="assets/auth_illustration.png" alt="Shiksha AI Student & Robot Assistant">
+        </div>
+        <h2>Welcome back to Shiksha AI</h2>
+        <p>Continue your personalized learning journey with AI-generated summaries, audio lessons, and smart quizzes.</p>
+        <div class="auth-feature-chips">
+          <span class="auth-chip">⚡ Quick Summary</span>
+          <span class="auth-chip">🎧 Listen Anywhere</span>
+          <span class="auth-chip">📊 Practice Tests</span>
+        </div>
+      </div>
+
+      <!-- Right Form Card Section -->
+      <div class="auth-form-card">
+        <div class="auth-header">
+          <a class="auth-brand-logo" href="index.html">
+            <span>🎓</span> Shiksha<span>AI</span>
+          </a>
+          <h1>Welcome Back</h1>
+          <p>Please enter your credentials to log into your account.</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="auth-field">
+            <label for="email">Email Address</label>
+            <div class="input-icon-wrapper">
+              <span class="input-icon">📧</span>
+              <input type="email" id="email" name="email" required placeholder="you@example.com">
+            </div>
+          </div>
+
+          <div class="auth-field">
+            <label for="password">Password</label>
+            <div class="input-icon-wrapper">
+              <span class="input-icon">🔒</span>
+              <input type="password" id="password" name="password" required placeholder="Enter your password">
+              <button type="button" class="toggle-pwd-btn" onclick="togglePassword('password', this)" title="Toggle password visibility">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-auth-primary" id="loginSubmitBtn">
+            <span class="btn-spinner" id="loginSpinner"></span>
+            <span id="loginBtnText">Log In →</span>
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <button type="button" class="btn-google" onclick="toast('Google sign-in integration coming soon!')">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.27v3.15C3.25 21.3 7.31 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.27C.46 8.2 0 10.04 0 12s.46 3.8 1.27 5.42l4.01-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.7 1.27 6.58l4.01 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <p class="auth-footer-link">
+          New here? <a href="signup.html">Create an Account</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    const loginForm = document.querySelector('#loginForm');
+    const submitBtn = document.querySelector('#loginSubmitBtn');
+    const spinner = document.querySelector('#loginSpinner');
+    const btnText = document.querySelector('#loginBtnText');
+
+    loginForm.onsubmit = async (event) => {
+      event.preventDefault();
+      const form = new FormData(loginForm);
+      const email = form.get('email')?.trim();
+      const password = form.get('password');
+
+      if (!email || !password) {
+        return toast('Please enter your email and password', 'error');
+      }
+
+      // Show Spinner Loading State
+      spinner.style.display = 'inline-block';
+      btnText.textContent = 'Logging In...';
+      submitBtn.disabled = true;
+
+      try {
+        const data = await api.post('/login', { email, password });
+        localStorage.setItem('shiksha_token', data.access_token);
+        localStorage.setItem('shiksha_user', JSON.stringify(data.user));
+        toast('Logged in successfully!');
+        setTimeout(() => location.href = 'dashboard.html', 700);
+      } catch (error) {
+        toast(error.message || 'Invalid email or password', 'error');
+        spinner.style.display = 'none';
+        btnText.textContent = 'Log In →';
+        submitBtn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
