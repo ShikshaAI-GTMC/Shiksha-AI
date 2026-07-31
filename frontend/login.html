@@ -115,7 +115,7 @@
         localStorage.setItem('shiksha_token', data.access_token);
         localStorage.setItem('shiksha_user', JSON.stringify(data.user));
         toast('Logged in successfully!');
-        setTimeout(() => location.href = 'dashboard.html', 700);
+        location.href = 'dashboard.html';
       } catch (error) {
         toast(error.message || 'Invalid email or password', 'error');
         spinner.style.display = 'none';
